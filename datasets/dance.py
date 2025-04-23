@@ -43,16 +43,25 @@ class DetMOTDetection:
         self.mot_path = args.mot_path
 
         self.labels_full = defaultdict(lambda : defaultdict(list))
+        
         def add_mot_folder(split_dir):
             print("Adding", split_dir)
             for vid in os.listdir(os.path.join(self.mot_path, split_dir)):
                 if 'seqmap' == vid:
                     continue
-                vid = os.path.join(split_dir, vid)
-                if 'DPM' in vid or 'FRCNN' in vid:
-                    print(f'filter {vid}')
+
+                # 디렉토리인지 확인
+                full_vid_path = os.path.join(self.mot_path, split_dir, vid)
+                if not os.path.isdir(full_vid_path):
+                    print(f'skip (not a directory): {vid}')
                     continue
-                gt_path = os.path.join(self.mot_path, vid, 'gt', 'gt.txt')
+
+                vid_path = os.path.join(split_dir, vid)
+                if 'DPM' in vid_path or 'FRCNN' in vid_path:
+                    print(f'filter {vid_path}')
+                    continue
+
+                gt_path = os.path.join(self.mot_path, vid_path, 'gt', 'gt.txt')
                 for l in open(gt_path):
                     t, i, *xywh, mark, label = l.strip().split(',')[:8]
                     t, i, mark, label = map(int, (t, i, mark, label))
@@ -63,7 +72,8 @@ class DetMOTDetection:
                     else:
                         crowd = False
                     x, y, w, h = map(float, (xywh))
-                    self.labels_full[vid][t].append([x, y, w, h, i, crowd])
+                    self.labels_full[vid_path][t].append([x, y, w, h, i, crowd])
+
 
         add_mot_folder("DanceTrack/train")
         vid_files = list(self.labels_full.keys())
